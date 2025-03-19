@@ -17,7 +17,7 @@ catkin_package(
   LIBRARIES
 )
 
-add_definitions(-std=c++14)
+add_definitions(-std=c++17)
 
 add_executable(rotors_joy_interface src/joy.cpp)
 add_dependencies(rotors_joy_interface ${catkin_EXPORTED_TARGETS})
