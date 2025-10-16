@@ -59,11 +59,21 @@ class LeePositionController {
   LeePositionController();
   ~LeePositionController();
   void InitializeParameters();
-  void CalculateRotorVelocities(Eigen::VectorXd* rotor_velocities) const;
+  void CalculateRotorVelocities(Eigen::VectorXd* rotor_velocities, bool use_acc = false) const;
 
   void SetOdometry(const EigenOdometry& odometry);
   void SetTrajectoryPoint(
     const mav_msgs::EigenTrajectoryPoint& command_trajectory);
+  void setCommandAcceleration(const Eigen::Vector3d& acc, double yaw_rate) {
+    Eigen::Vector3d e_3(Eigen::Vector3d::UnitZ());
+    // std::cout << "Setting acc:" << std::endl;
+    // std::cout << "  Gravity is " << vehicle_parameters_.gravity_ << std::endl;
+    // std::cout << "  Acc command is " << acc.transpose() << std::endl;
+    cmd_acc_ = - acc - vehicle_parameters_.gravity_ * e_3;
+    // std::cout << "  Final acc is " << cmd_acc_.transpose() << std::endl;
+    cmd_yaw_rate_ = yaw_rate;
+    controller_active_ = true;
+  }
 
   LeePositionControllerParameters controller_parameters_;
   VehicleParameters vehicle_parameters_;
@@ -79,9 +89,12 @@ class LeePositionController {
 
   mav_msgs::EigenTrajectoryPoint command_trajectory_;
   EigenOdometry odometry_;
+  Eigen::Vector3d cmd_acc_;
+  double cmd_yaw_rate_;
 
   void ComputeDesiredAngularAcc(const Eigen::Vector3d& acceleration,
-                                Eigen::Vector3d* angular_acceleration) const;
+                                Eigen::Vector3d* angular_acceleration,
+                                bool use_acc) const;
   void ComputeDesiredAcceleration(Eigen::Vector3d* acceleration) const;
 };
 }

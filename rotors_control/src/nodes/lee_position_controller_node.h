@@ -30,6 +30,7 @@
 #include <mav_msgs/AttitudeThrust.h>
 #include <mav_msgs/eigen_mav_msgs.h>
 #include <nav_msgs/Odometry.h>
+#include <geometry_msgs/Twist.h>
 #include <ros/callback_queue.h>
 #include <ros/ros.h>
 #include <trajectory_msgs/MultiDOFJointTrajectory.h>
@@ -59,6 +60,7 @@ class LeePositionControllerNode {
   ros::Subscriber cmd_trajectory_sub_;
   ros::Subscriber cmd_multi_dof_joint_trajectory_sub_;
   ros::Subscriber cmd_pose_sub_;
+  ros::Subscriber cmd_acc_sub_;
   ros::Subscriber odometry_sub_;
 
   ros::Publisher motor_velocity_reference_pub_;
@@ -67,6 +69,8 @@ class LeePositionControllerNode {
   std::deque<ros::Duration> command_waiting_times_;
   ros::Timer command_timer_;
 
+  bool use_acc_input_;
+
   void TimedCommandCallback(const ros::TimerEvent& e);
 
   void MultiDofJointTrajectoryCallback(
@@ -74,6 +78,9 @@ class LeePositionControllerNode {
 
   void CommandPoseCallback(
       const geometry_msgs::PoseStampedConstPtr& pose_msg);
+
+	void CommandAccCallback(
+			const geometry_msgs::TwistConstPtr& acc_msg);
 
   void OdometryCallback(const nav_msgs::OdometryConstPtr& odometry_msg);
 };

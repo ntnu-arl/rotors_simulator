@@ -41,14 +41,18 @@ LeePositionControllerNode::LeePositionControllerNode(
       mav_msgs::default_topics::COMMAND_TRAJECTORY, 1,
       &LeePositionControllerNode::MultiDofJointTrajectoryCallback, this);
 
+  cmd_acc_sub_ = nh_.subscribe(
+      "command/acc", 1,
+      &LeePositionControllerNode::CommandAccCallback, this);
+  
   odometry_sub_ = nh_.subscribe(mav_msgs::default_topics::ODOMETRY, 1,
                                &LeePositionControllerNode::OdometryCallback, this);
 
   motor_velocity_reference_pub_ = nh_.advertise<mav_msgs::Actuators>(
       mav_msgs::default_topics::COMMAND_ACTUATORS, 1);
 
-  command_timer_ = nh_.createTimer(ros::Duration(0), &LeePositionControllerNode::TimedCommandCallback, this,
-                                  true, false);
+  // command_timer_ = nh_.createTimer(ros::Duration(0), &LeePositionControllerNode::TimedCommandCallback, this,
+  //                                 true, false);
 }
 
 LeePositionControllerNode::~LeePositionControllerNode() { }
@@ -92,6 +96,9 @@ void LeePositionControllerNode::InitializeParams() {
   GetRosParameter(private_nh_, "angular_rate_gain/z",
                   lee_position_controller_.controller_parameters_.angular_rate_gain_.z(),
                   &lee_position_controller_.controller_parameters_.angular_rate_gain_.z());
+  GetRosParameter(private_nh_, "use_acc_input",
+                  false,
+                  &use_acc_input_);
   GetVehicleParameters(private_nh_, &lee_position_controller_.vehicle_parameters_);
   lee_position_controller_.InitializeParameters();
 }
@@ -152,6 +159,20 @@ void LeePositionControllerNode::MultiDofJointTrajectoryCallback(
   }
 }
 
+void LeePositionControllerNode::CommandAccCallback(
+    const geometry_msgs::TwistConstPtr& acc_msg) {
+  // std::cout << "Receieved acc command " << acc_msg->linear.x << " " << acc_msg->linear.y << " " << acc_msg->linear.z << std::endl;
+  if(!use_acc_input_){
+    ROS_WARN_THROTTLE(5, "LeePositionControllerNode: Ignoring acc command, use_acc_input is set to false");
+    return;
+  }
+  Eigen::Vector3d acc;
+  acc.x() = acc_msg->linear.x;
+  acc.y() = acc_msg->linear.y;
+  acc.z() = acc_msg->linear.z;
+  lee_position_controller_.setCommandAcceleration(acc, acc_msg->angular.z);
+}
+
 void LeePositionControllerNode::TimedCommandCallback(const ros::TimerEvent& e) {
 
   if(commands_.empty()){
@@ -179,7 +200,7 @@ void LeePositionControllerNode::OdometryCallback(const nav_msgs::OdometryConstPt
   lee_position_controller_.SetOdometry(odometry);
 
   Eigen::VectorXd ref_rotor_velocities;
-  lee_position_controller_.CalculateRotorVelocities(&ref_rotor_velocities);
+  lee_position_controller_.CalculateRotorVelocities(&ref_rotor_velocities, use_acc_input_);
 
   // Todo(ffurrer): Do this in the conversions header.
   mav_msgs::ActuatorsPtr actuator_msg(new mav_msgs::Actuators);
