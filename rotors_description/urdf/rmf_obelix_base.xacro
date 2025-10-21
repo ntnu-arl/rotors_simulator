@@ -53,7 +53,7 @@
 
   <!-- Add an 0S0-128 lidar -->
   <xacro:include filename="$(find lidar_description)/urdf/OS0-128.urdf.xacro"/>
-  <xacro:OS0-128 parent="${namespace}/base_link" name="${namespace}/velodyne" topic="velodyne_points" hz="10" lasers="64" samples="512" collision_range="0.2" min_range="0.2" max_range="100.0" gpu="true" noise="0.01" organize_cloud="true">
+  <xacro:OS0-128 parent="${namespace}/base_link" name="${namespace}/velodyne" topic="velodyne_points" hz="10" lasers="128" samples="512" collision_range="0.2" min_range="0.2" max_range="100.0" gpu="true" noise="0.01" organize_cloud="true">
     <origin xyz="0.0 0 0.08" rpy="0 0 0" />
   </xacro:OS0-128>
 
