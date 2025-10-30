@@ -170,6 +170,8 @@ void LeePositionControllerNode::CommandAccCallback(
   acc.x() = acc_msg->linear.x;
   acc.y() = acc_msg->linear.y;
   acc.z() = acc_msg->linear.z;
+  curr_cmd_acc_ = acc;
+  curr_cmd_yaw_rate_ = acc_msg->angular.z;
   lee_position_controller_.setCommandAcceleration(acc, acc_msg->angular.z);
 }
 
@@ -191,6 +193,28 @@ void LeePositionControllerNode::TimedCommandCallback(const ros::TimerEvent& e) {
   }
 }
 
+// void LeePositionControllerNode::OdometryCallback(const nav_msgs::OdometryConstPtr& odometry_msg) {
+
+//   ROS_INFO_ONCE("LeePositionController got first odometry message.");
+
+//   EigenOdometry odometry;
+//   eigenOdometryFromMsg(odometry_msg, &odometry);
+//   lee_position_controller_.SetOdometry(odometry);
+
+//   Eigen::VectorXd ref_rotor_velocities;
+//   lee_position_controller_.CalculateRotorVelocities(&ref_rotor_velocities, use_acc_input_);
+
+//   // Todo(ffurrer): Do this in the conversions header.
+//   mav_msgs::ActuatorsPtr actuator_msg(new mav_msgs::Actuators);
+
+//   actuator_msg->angular_velocities.clear();
+//   for (int i = 0; i < ref_rotor_velocities.size(); i++)
+//     actuator_msg->angular_velocities.push_back(ref_rotor_velocities[i]);
+//   actuator_msg->header.stamp = odometry_msg->header.stamp;
+
+//   motor_velocity_reference_pub_.publish(actuator_msg);
+// }
+
 void LeePositionControllerNode::OdometryCallback(const nav_msgs::OdometryConstPtr& odometry_msg) {
 
   ROS_INFO_ONCE("LeePositionController got first odometry message.");
@@ -198,6 +222,14 @@ void LeePositionControllerNode::OdometryCallback(const nav_msgs::OdometryConstPt
   EigenOdometry odometry;
   eigenOdometryFromMsg(odometry_msg, &odometry);
   lee_position_controller_.SetOdometry(odometry);
+
+  // Transform acceleration from body frame to world frame
+  Eigen::Quaterniond q(odometry_msg->pose.pose.orientation.w,
+                       odometry_msg->pose.pose.orientation.x,
+                       odometry_msg->pose.pose.orientation.y,
+                       odometry_msg->pose.pose.orientation.z);
+  Eigen::Vector3d curr_cmd_acc_world = q * curr_cmd_acc_;
+  lee_position_controller_.setCommandAcceleration(curr_cmd_acc_world, curr_cmd_yaw_rate_);
 
   Eigen::VectorXd ref_rotor_velocities;
   lee_position_controller_.CalculateRotorVelocities(&ref_rotor_velocities, use_acc_input_);

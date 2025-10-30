@@ -70,6 +70,8 @@ class LeePositionControllerNode {
   ros::Timer command_timer_;
 
   bool use_acc_input_;
+  Eigen::Vector3d curr_cmd_acc_;
+  double curr_cmd_yaw_rate_;
 
   void TimedCommandCallback(const ros::TimerEvent& e);
 
